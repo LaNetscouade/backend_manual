@@ -1,0 +1,451 @@
+<?php
+/**
+ * @file
+ * Code for the Backend manual feature.
+ */
+
+include_once 'backend_manual.features.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function backend_manual_menu() {
+  // Module settings.
+  $items['admin/config/backend_manual'] = array(
+    'title'            => 'Backend manual',
+    'description'      => 'Backend manual administration page',
+    'page callback'    => 'system_admin_menu_block_page',
+    'access arguments' => array('access backend manual'),
+    'file'             => 'system.admin.inc',
+    'file path'        => drupal_get_path('module', 'system'),
+  );
+  $items['admin/config/backend_manual/summary'] = array(
+    'title'            => t('Summary - Backend manual'),
+    'page callback'    => 'backend_manual_main_page',
+    'access arguments' => array('access backend manual'),
+    'type'             => MENU_NORMAL_ITEM,
+    'file'             => 'backend_manual.page.inc'
+  );
+  $items['admin/config/backend_manual/config'] = array(
+    'title'            => t('Backend Manual configuration'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('backend_manual_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'file'             => 'backend_manual.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_admin_paths_alter().
+ */
+function backend_manual_admin_paths_alter(&$paths) {
+  // we don't need overlay for the summary page
+  $paths['admin/config/backend_manual/summary'] = FALSE;
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function backend_manual_page_alter(&$page) {
+  // if we are in backend manual context: we don't use the drupal toolbar
+  if (_backend_manual_check_context()) {
+    unset($page['page_top']['toolbar']);
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function backend_manual_permission() {
+  return array(
+    'access backend manual' =>  array(
+      'title'       => t('Access to backend manual'),
+      'description' => t('Give access to view manual backed summary and pages'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function backend_manual_node_view($node, $view_mode, $langcode) {
+  if ($node->type == 'manual_page' && $view_mode == 'full') {
+    drupal_add_js(drupal_get_path('module', 'backend_manual') . '/js/vendor.js');
+    drupal_add_js(drupal_get_path('module', 'backend_manual') . '/js/main.js');
+
+    $node->content['print_link'] = array(
+      '#theme'   => 'link',
+      '#text'    => '<i class="large icon-local-print-shop"></i>',
+      '#path'    => 'node/' . $node->nid,
+      '#options' => array(
+        'attributes' => array(
+          'class'         => array('btn-floating', 'tooltipped', 'yellow', 'accent-4'),
+          'data-position' => 'left',
+          'data-delay'    => '50',
+          'data-tooltip'  => t('Print'),
+          'onclick'       => 'window.print()',
+        ),
+        'html'       => TRUE,
+      ),
+    );
+
+    // link to the corrensponding page
+    if ($linked_page = field_get_items('node', $node, 'field_bm_linked_page')) {
+      $node->content['field_bm_linked_page'] = array(
+        '#theme'   => 'link',
+        '#text'    => '<i class="large icon-arrow-forward"></i>',
+        '#path'    => $linked_page[0]['value'],
+        '#options' => array(
+          'attributes' => array(
+            'class'         => array('btn-floating', 'backend-blue', 'tooltipped'),
+            'data-position' => 'left',
+            'data-delay'    => '50',
+            'data-tooltip'  => t('Go to the corresponding page')
+          ),
+          'html'       => TRUE,
+        ),
+      );
+    }
+
+    // link to the edit page if user has permission to do it
+    if (node_access('update', $node)) {
+      $node->content['edit_link'] = array(
+        '#theme'   => 'link',
+        '#text'    => '<i class="large icon-edit"></i>',
+        '#path'    => 'node/' . $node->nid . '/edit',
+        '#options' => array(
+          'attributes' => array(
+            'class'         => array('btn-floating', 'tooltipped', 'green', 'accent-4'),
+            'data-position' => 'left',
+            'data-delay'    => '50',
+            'data-tooltip'  => t('Edit')
+          ),
+          'html'       => TRUE,
+        ),
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_system_info_alter().
+ */
+function backend_manual_system_info_alter(&$info, $file, $type) {
+  if ($type == 'theme') {
+    // add new region
+    $info['regions'] = array_merge($info['regions'],  array('bm_sidebar_first' => t('Backend manual - Sidebar left')));
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function backend_manual_block_info() {
+  $blocks['backend_manual_menu'] = array(
+    'info' => t('Backend manual menu'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function backend_manual_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'backend_manual_menu':
+      $block['content'] = _backend_manual_menu_builder();
+      break;
+  }
+
+  return $block;
+}
+
+/**
+ * backend manual navigation menu block
+ */
+function _backend_manual_menu_builder() {
+
+  // in node view case, get the active category tid and the active nid
+  $active_category_tid = 0;
+  $active_nid          = 0;
+  if ($node = menu_get_object()) {
+    $field_bm_category   = field_get_items('node', $node, 'field_bm_category');
+    $active_category_tid = $field_bm_category[0]['tid'];
+    $active_nid          = $node->nid;
+  }
+
+  // menu header
+  $summary_attributes = array(
+    'attributes' => array(
+    'class'      => array('waves-effect', 'waves-backend-blue')),
+  );
+  $menu_container[] = array(
+    'data'  => l(t('Summary'), 'admin/config/backend_manual/summary', $summary_attributes)
+  );
+
+  // get category terms
+  $category_terms = _backend_manual_get_category_terms();
+  foreach ($category_terms as $term) {
+    // get nodes for each category term
+    $nodes = taxonomy_select_nodes($term->tid, FALSE, FALSE, array('t.created' => 'ASC'));
+    $node_title_items = array();
+    foreach ($nodes as $nid) {
+      $node = node_load($nid);
+      $node_title_items[] = array(
+        'data'  => l($node->title, 'node/' . $nid),
+        'class' => $nid == $active_nid ? array('active') : array(),
+      );
+    }
+
+    // create item list fo each node
+    $node_list = array(
+      '#theme'      => 'item_list',
+      '#items'      => $node_title_items,
+      '#attributes' => array(
+        'class' => 'collapsible collapsible-accordion',
+      )
+    );
+    $menu_item = array(
+      '#theme'            => 'backend_manual_menu_item',
+      '#term_name'        => $term->name,
+      '#node_title_list'  => render($node_list),
+      '#active_status'    => $term->tid == $active_category_tid ? 'active' : NULL,
+    );
+    $item_class   = array('bold');
+    $term_items[] = array(
+      'data'  => render($menu_item),
+      'class' => array('bold'),
+    );
+  }
+
+  // menu list items list
+  $menu_list = array(
+    '#theme'      => 'item_list',
+    '#items'      => $term_items,
+    '#attributes' => array(
+      'class' => 'collapsible collapsible-accordion',
+    )
+  );
+
+  $menu_container[] = array(
+    'data'  => render($menu_list),
+    'class' => array('no-padding'),
+  );
+
+  $menu = array(
+    '#theme'      => 'item_list',
+    '#items'      => $menu_container,
+    '#attributes' => array(
+      'class' => 'side-nav fixed',
+      'id'    => 'nav-mobile',
+    )
+  );
+
+  return render($menu);
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function backend_manual_theme($existing, $type, $theme, $path) {
+  return array(
+    'backend_manual_page' =>  array(
+      'template'       => 'backend-manual-page',
+      'path'           => $path . '/theme',
+      'render element' => 'page',
+    ),
+    'backend_manual_html' =>  array(
+      'template'       => 'backend-manual-html',
+      'path'           => $path . '/theme',
+      'render element' => 'page',
+    ),
+    'node__manual_page' => array(
+      'render element' => 'content',
+      'base hook'      => 'node',
+      'template'       => 'node__manual-page',
+      'path'           => $path . '/theme',
+    ),
+    'backend_manual_menu_item' => array(
+      'template'  => 'backend-manual-menu-item',
+      'path'      => $path . '/theme',
+      'variables' => array(
+        'term_name'       => NULL,
+        'node_title_list' => NULL,
+        'active_status'   => NULL
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements of hook_preprocess_page().
+ */
+function backend_manual_preprocess_page(&$variables) {
+  // if we are in backend manual context:
+  if (_backend_manual_check_context()) {
+    // we don't use the default page.tpl.php
+    // we use our backend-manual-page.tpl.php in theme folder, @see hook_theme
+    $variables['theme_hook_suggestions'][] = 'backend_manual_page';
+
+    // we use custom status message theme
+    $variables['show_messages'] == FALSE;
+    $variables['bm_messages']   = _backend_manual_custom_status_message();
+  }
+}
+
+/**
+ * Implements hook_css_alter().
+ */
+function backend_manual_css_alter(&$css) {
+  // if we are in backend manual context: remove all css in the website
+  if (_backend_manual_check_context()) {
+    foreach ($css as $key => $value) {
+      unset($css[$key]);
+    }
+  }
+}
+
+/**
+ * Implements hook_js_alter().
+ */
+function backend_manual_js_alter(&$javascript) {
+  // if we are in backend manual context
+  // remove useless JS
+  if (_backend_manual_check_context()) {
+    $bm_path = drupal_get_path('module', 'backend_manual');
+    $js_to_keep['settings'] = $javascript['settings'];
+    $js_to_keep['misc/drupal.js'] = $javascript['misc/drupal.js'];
+    $js_to_keep[$bm_path . '/js/vendor.js'] = $javascript[$bm_path . '/js/vendor.js'];
+    $js_to_keep[$bm_path . '/js/main.js'] = $javascript[$bm_path . '/js/main.js'];
+
+    if (module_exists('admin_menu')) {
+      $admin_menu_path = drupal_get_path('module', 'admin_menu');
+      $js_to_keep[$admin_menu_path . '/admin_menu.js'] = $javascript[$admin_menu_path . '/admin_menu.js'];
+    }
+
+    foreach ($javascript as $key => $value) {
+      if (strpos($key, 'jquery') == TRUE) {
+        $js_to_keep[$key] = $value;
+      }
+      unset($javascript[$key]);
+    }
+    $javascript = $js_to_keep;
+  }
+}
+
+/**
+ * Implements hook_preprocess_field().
+ */
+function backend_manual_preprocess_field(&$variables) {
+  if ($variables['element']['#field_name'] == 'field_bm_subtitle') {
+    $variables['theme_hook_suggestions'][] = 'field__field_bm_subtitle';
+  }
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function backend_manual_theme_registry_alter(&$theme_registry) {
+  $custom_theme_path = drupal_get_path('module', 'backend_manual') . '/theme';
+  $field_suggestion = 'field__field_bm_subtitle';
+  $theme_registry[$field_suggestion] = array(
+    'template'    => 'field--field-bm-subtitle',
+    'theme paths' => array($custom_theme_path),
+    'theme path'  => $custom_theme_path,
+    'path'        => $custom_theme_path,
+    'type'        => 'theme_engine',
+  );
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function backend_manual_preprocess_html(&$variables) {
+  // if we are in backend manual context:
+  // use use custom html.tpl.php
+  if (_backend_manual_check_context()) {
+    $styles = '';
+    $variables['theme_hook_suggestions'][] = 'backend_manual_html';
+
+    $style_paths['backend_manual'] = drupal_get_path('module', 'backend_manual') . '/css/main.css';
+
+    if (module_exists('admin_menu')) {
+      $style_paths['admin_menu'] = drupal_get_path('module', 'admin_menu') . '/admin_menu.css';
+    }
+
+    foreach ($style_paths as $style_name => $style_path) {
+      $style_name = array(
+        '#type' => 'styles',
+        '#items' => array(
+          $style_path => array(
+            'data'  => $style_path,
+            'type'  => 'file',
+            'media' => 'all',
+            'group' => 0,
+            'every_page' => TRUE,
+            'preprocess' => TRUE,
+            'browsers'   => array()
+          )
+        )
+      );
+      $styles .= render($style_name);
+    }
+    $variables['bm_styles'] = $styles;
+  }
+}
+
+/**
+ * helper: check if we are in backend manual context
+ * @return boolean
+ */
+function _backend_manual_check_context() {
+  $context = context_get();
+  if (array_key_exists('context', $context) && array_key_exists('backend_manual', $context['context'])) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/**
+ * helper: get manuel backend category terms
+ * @return array of taxonomies object
+ */
+function _backend_manual_get_category_terms() {
+  $vocabulary = taxonomy_vocabulary_machine_name_load('backend_manual_category');
+  $terms = taxonomy_get_tree($vocabulary->vid);
+
+  return $terms;
+}
+
+/**
+ * helper: custom status message theme
+ * @return string html status message
+ */
+function _backend_manual_custom_status_message() {
+  $message_items = array();
+  $output = NULL;
+  foreach (drupal_get_messages() as $type => $messages) {
+    foreach ($messages as $message) {
+      $message_items[] = $message;
+    }
+    $message_container = array(
+      '#type'       => 'container',
+      '#attributes' => array('class' => array('alert', 'type-' . $type)),
+      'message'     => array(
+        '#theme' => 'item_list',
+        '#items' => $message_items
+      ),
+    );
+    $output .= render($message_container);
+  }
+
+  return $output;
+}

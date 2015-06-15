@@ -1,0 +1,16 @@
+.card {
+	.card-title {
+		font-size: 16px;
+		background: rgba(0,0,0,.45);
+		width: 100%;
+		padding: 15px;
+	}
+}
+
+.card-panel {
+  padding: $card-padding;
+  margin: $element-top-margin 0 $element-bottom-margin 0;
+  border-radius: 2px;
+  @extend .z-depth-1;
+  background-color: $card-bg-color;
+}

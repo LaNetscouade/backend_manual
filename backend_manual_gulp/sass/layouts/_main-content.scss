@@ -1,0 +1,14 @@
+.node-type-manual-page {
+	.main-content {
+		padding-left: 240px;
+		@media print {
+			padding-left: 0;
+		}
+	}
+}
+
+@media #{$medium-and-down} {
+	.main-content {
+		padding-left: 0;
+	}	
+}

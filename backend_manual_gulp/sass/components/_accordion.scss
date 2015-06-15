@@ -1,0 +1,10 @@
+.collapsible-header {
+	i {
+		transition: all .2s;
+	}
+	&.active {
+		i {
+			transform: rotate(180deg);
+		}
+	}
+}

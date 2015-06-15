@@ -1,0 +1,235 @@
+// Page specifics
+.node-type-manual-page {
+	.subtitle {
+		display: inline-block;
+		background: map-get($grey, "base");
+		color: #fff;
+		padding: 1rem;
+		padding: $card-padding;
+		margin: $element-top-margin 0 $element-bottom-margin 0;
+  		border-radius: 2px;
+  		position: relative;
+		@extend .z-depth-1;
+		@media print {
+			border: 1px solid #aaa;
+			box-shadow: none;
+		}
+	}
+	.block-system {
+		padding: 2rem 0 0;
+		// Links
+		a {
+			&:hover {
+				text-decoration: underline;
+			}
+		}
+		// Lists
+		ul {
+			padding-left: 40px;
+			li {
+				list-style: disc;
+			}
+		}
+		ol {
+			li {
+				list-style: decimal;
+			}
+		}
+		// Tables
+		table {
+			background: map-get($grey, "lighten-3");
+			line-height: 24px;
+			margin: 30px auto;
+			text-align: left;
+			border-collapse: initial;
+			@media print {
+				page-break-after: avoid;
+  				page-break-inside: avoid;
+  				border:solid #aaa !important;
+				border-width:1px 0 0 1px !important;
+			}
+		}	
+
+		th {
+			background: map-get($grey, "base");
+			color: #fff;
+		  	font-weight: 900;
+			padding: 10px 15px;
+			position: relative;
+			border-radius: 0;
+			border-right: 1px solid #fff;
+			@media print {
+				background: none;
+				color: #000;
+				border: solid #aaa !important;
+				border-width:0 1px 1px 0 !important;
+			}
+			&:last-child {
+				border-right: 0;
+			}
+		}
+
+		thead + tbody {
+			tr:first-child {
+				td {
+					background: lighten(map-get($grey, "lighten-2"), 5%);
+					color: map-get($backend-purple, darken-1);		
+				}
+			}
+		}
+
+		td {
+			padding: 10px 15px;
+			position: relative;
+			background: lighten(map-get($grey, "lighten-2"), 5%);
+			border-right: 1px solid #fff;
+			border-radius: 0;
+			@media print {
+				background: none;
+				border: solid #aaa !important;
+				border-width:0 1px 1px 0 !important;
+			}
+			&:last-child {
+				border-right: 0;
+			}
+			p {
+				margin: 0;
+			}
+		}
+
+		tr {
+			&:first-child td {
+				background: map-get($grey, "base");
+				color: #fff;
+				@media print {
+					background: none;
+					color: #000;
+				}
+			}
+			&:nth-child(even) td {
+				background: map-get($grey, "lighten-2");
+			}	
+		}
+
+		// Code
+		pre {
+			background: map-get($grey, "darken-1");
+			color: #fff;
+			padding: 1rem;
+			word-break: break-word;
+			@extend .z-depth-2;
+			@media print {
+				border: 1px solid #aaa;
+				box-shadow: none;
+  				page-break-inside: avoid;
+			}
+		}	
+		// Nav
+		.fixed-actions-nav {
+			padding-left: 0;	
+			li {
+				list-style: none;
+			}	
+		}
+		// Cards
+		.tips {
+			background: map-get($green, "accent-4");
+			color: #fff;
+			position: relative;
+			padding: 20px 20px 20px 90px;
+			@media print {
+				border: 1px solid #aaa;
+				box-shadow: none;
+				page-break-after: avoid;
+  				page-break-inside: avoid;
+			}
+			&:before {
+				content: "\e600";
+				font-family: 'icomoon';
+			    speak: none;
+			    font-style: normal;
+			    font-weight: normal;
+			    font-variant: normal;
+			    text-transform: none;
+			    line-height: 1;
+			    /* Better Font Rendering =========== */
+			    -webkit-font-smoothing: antialiased;
+			    -moz-osx-font-smoothing: grayscale;
+			    display: block;
+			    font-size: 50px;
+				position: absolute;
+				top: 50%;
+				left: 20px;
+				margin-top: -25px;
+			}
+		}
+		.warning {
+			background: map-get($backend-red, "base");
+			color: #fff;
+			position: relative;
+			padding: 20px 20px 20px 90px;
+			@media print {
+				border: 1px solid #aaa;
+				box-shadow: none;
+				page-break-after: avoid;
+  				page-break-inside: avoid;
+			}
+			&:before {
+				content: "\e601";
+				font-family: 'icomoon';
+			    speak: none;
+			    font-style: normal;
+			    font-weight: normal;
+			    font-variant: normal;
+			    text-transform: none;
+			    line-height: 1;
+			    /* Better Font Rendering =========== */
+			    -webkit-font-smoothing: antialiased;
+			    -moz-osx-font-smoothing: grayscale;
+			    display: block;
+			    font-size: 50px;
+				position: absolute;
+				top: 50%;
+				left: 20px;
+				margin-top: -25px;
+			}
+		}
+	}
+
+	// Responsive imgs videos
+	img, video, iframe {
+		max-width: 100%;
+		height: auto;
+		@extend .z-depth-2;
+		@media print {
+			page-break-after: avoid;
+  			page-break-inside: avoid;
+			box-shadow: none;
+		}
+	}
+	.image-label {
+		margin: 10px 0 0;
+		color: map-get($backend-blue, "base");
+		font-style: italic;
+	}
+
+	.field-name-field-bm-body {
+		margin: 4rem 0;
+		border-top: 1px solid map-get($grey, "lighten-2");
+	}
+	.fixed-action-btn {
+		bottom: 40px;
+		right: 40px;
+		padding-top: 25px;
+		.icon-add {
+			@include absolute-centering;
+		}
+		@media print {
+			display: none;
+		}
+	}
+}
+
+.fixed-actions-nav {
+	padding-left: 0;	
+}

@@ -1,0 +1,28 @@
+.page-admin {
+	.bm-text-link {
+		margin-left: 10px;
+	}
+	.collapsible-header {
+		font-size: 21px;
+	}
+	.collapsible-body {
+		ul {
+			margin: .5rem 0;
+			li {
+				font-weight: normal;
+				padding: .3rem 1rem;
+			}
+			.svg-icon {
+				display: none;
+			}	
+		}
+	}
+}
+
+.bm-text-link {
+	transition: all .2s;
+	&:hover {
+    	text-decoration: underline;
+		color: lighten($primary-color, 5%);
+	}	
+}

@@ -1,0 +1,17 @@
+@media #{$medium-and-up} {
+  .container {
+    width: 85%;
+  }
+}
+@media #{$large-and-up} {
+  .container {
+    width: 70%;
+  }
+}
+
+@media print {
+	.container, .row, .col.m12 {
+    	width: 100%; margin: 0; float: none;
+	}
+
+}

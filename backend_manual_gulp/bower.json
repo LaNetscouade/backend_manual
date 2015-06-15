@@ -1,0 +1,8 @@
+{
+  "name": "gulp-materialize",
+  "private": true,
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "materialize": "~0.96.1"
+  }
+}
