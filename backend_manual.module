@@ -130,6 +130,20 @@ function backend_manual_node_view($node, $view_mode, $langcode) {
 }
 
 /**
+ * Implements hook_node_access().
+ */
+function backend_manual_node_access($node, $op, $account) {
+  if ($node->type == 'manual_page' && $op = 'view') {
+    if(user_access('access backend manual')) {
+      return NODE_ACCESS_ALLOW;
+    }
+    else {
+      return NODE_ACCESS_DENY;
+    }
+  }
+}
+
+/**
  * Implements hook_system_info_alter().
  */
 function backend_manual_system_info_alter(&$info, $file, $type) {
